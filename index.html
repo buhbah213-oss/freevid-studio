@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090d1b"><meta name="description" content="Free, local image-to-video studio for Android.">
+<link rel="manifest" href="manifest.webmanifest">
+<title>FreeVid Studio</title>
+<style>
+:root{color-scheme:dark;--bg:#080c18;--panel:#11182b;--line:#303c5c;--text:#f4f6ff;--muted:#aab5d0;--a:#7857ff;--b:#25c8ff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#182044 0,#080c18 58%);color:var(--text);font:15px system-ui,-apple-system,Segoe UI,sans-serif}
+header{padding:18px 16px 12px;display:flex;align-items:center;gap:12px;position:sticky;top:0;background:#080c18ed;backdrop-filter:blur(12px);z-index:3;border-bottom:1px solid #202a45}
+.logo{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,var(--b),var(--a));display:grid;place-items:center;font-size:23px;font-weight:900;color:white}
+h1{font-size:20px;margin:0}header p{margin:2px 0 0;color:var(--muted);font-size:12px}
+main{max-width:780px;margin:auto;padding:14px;display:grid;gap:14px}.card{border:1px solid var(--line);background:linear-gradient(145deg,#151d33f5,#0d1324f5);border-radius:18px;padding:15px;box-shadow:0 8px 28px #0003}
+h2{font-size:16px;margin:0 0 12px}.muted{color:var(--muted);font-size:13px;line-height:1.45}
+.preview{background:#03050a;border-radius:14px;overflow:hidden;aspect-ratio:16/9;display:grid;place-items:center;position:relative;border:1px solid #293552}
+canvas{display:block;width:100%;height:100%;object-fit:contain}.empty{text-align:center;color:var(--muted);padding:18px}
+button,.filebtn{border:1px solid #4e5b82;border-radius:12px;padding:12px 14px;background:#18223b;color:white;font-weight:700;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.primary{background:linear-gradient(110deg,#6657ff,#8e35ed);border-color:#927aff}.secondary{background:#111a30}.danger{border-color:#8b4660}
+button:disabled{opacity:.45;cursor:not-allowed}.row{display:flex;gap:9px;flex-wrap:wrap}.row>*{flex:1}
+label{display:block;color:#dce3fa;font-size:13px;font-weight:650;margin:13px 0 6px}
+input[type=text],textarea,select,input[type=number]{width:100%;background:#090f20;border:1px solid #394765;border-radius:11px;padding:12px;color:white;font:inherit}
+textarea{min-height:84px;resize:vertical}input[type=file]{display:none}.filebtn{width:100%;margin-top:10px}
+input[type=range]{width:100%;accent-color:#8b6aff}
+.smallrow{display:flex;justify-content:space-between;color:var(--muted);font-size:12px}
+.status{font-size:13px;color:#b8c8ef;margin-top:10px;min-height:18px}
+footer{text-align:center;padding:8px 18px 28px;color:var(--muted);font-size:12px}
+.pill{display:inline-block;padding:4px 8px;border:1px solid #394765;border-radius:999px;color:#c7d3f3;font-size:11px;margin-bottom:10px}
+.notice{border-left:3px solid #8b6aff;padding:8px 10px;background:#17172e;border-radius:0 8px 8px 0}
+@media(min-width:650px){main{grid-template-columns:1fr 1fr;align-items:start}.wide{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<header><div class="logo">▶</div><div><h1>FreeVid Studio</h1><p>Free • Local • No API keys • No credits</p></div></header>
+<main>
+<section class="card wide">
+ <div class="pill">IMAGE → CINEMATIC CLIP</div>
+ <h2>1. Add your reference image</h2>
+ <div class="preview"><canvas id="canvas" width="1280" height="720"></canvas><div id="empty" class="empty" style="position:absolute">Choose an image to preview your cinematic animation.</div></div>
+ <input id="image" type="file" accept="image/*"><label for="image" class="filebtn">＋ Choose image from phone</label>
+ <label for="prompt">Scene / motion direction</label><textarea id="prompt" placeholder="e.g. Slow cinematic push-in, warm sunset light, subtle camera drift...">Slow cinematic push-in, gentle camera drift, dramatic natural lighting.</textarea>
+ <div class="muted">The prompt is saved with your settings, but this starter version animates the image using camera motion; it does not synthesize new AI frames.</div>
+</section>
+<section class="card">
+ <h2>2. Animation settings</h2>
+ <label for="duration">Duration <span id="durLabel">5 seconds</span></label><input id="duration" type="range" min="3" max="15" value="5">
+ <label for="motion">Camera movement</label><select id="motion"><option value="zoom">Slow cinematic zoom</option><option value="pan">Gentle left-to-right pan</option><option value="drift">Cinematic drift + zoom</option><option value="still">Still image with subtle movement</option></select>
+ <label for="ratio">Aspect ratio</label><select id="ratio"><option value="16:9">16:9 Landscape</option><option value="9:16">9:16 Portrait</option><option value="1:1">1:1 Square</option></select>
+ <div class="row" style="margin-top:16px"><button id="previewBtn" class="secondary" disabled>▶ Preview</button><button id="stopBtn" class="secondary" disabled>■ Stop</button></div>
+ <div class="status" id="videoStatus">Choose an image to begin.</div>
+ <button id="exportVideo" class="primary" style="width:100%;margin-top:8px" disabled>⬇ Export video</button>
+ <p class="muted">Exports a WebM video supported by Android and most modern players. MP4 export depends on browser/encoder support.</p>
+</section>
+<section class="card">
+ <h2>3. Generate audio</h2>
+ <label for="audioText">Voiceover text (device speech engine)</label><textarea id="audioText" placeholder="Type narration to speak aloud...">A quiet evening in the mountains, where the last light of the sun meets the water.</textarea>
+ <div class="row"><button id="speak" class="secondary">🔊 Speak text</button><button id="stopSpeak" class="secondary">Stop voice</button></div>
+ <label for="tone">Ambient sound</label><select id="tone"><option value="cinematic">Cinematic ambient</option><option value="wind">Soft wind</option><option value="drone">Warm low drone</option><option value="silence">No sound / silent</option></select>
+ <label for="audioDuration">Audio duration <span id="audioDurLabel">5 seconds</span></label><input id="audioDuration" type="range" min="3" max="30" value="5">
+ <button id="exportAudio" class="primary" style="width:100%;margin-top:12px">⬇ Create & download WAV</button>
+ <div class="status" id="audioStatus">Ambient audio is synthesized locally in your browser.</div>
+ <p class="muted">WAV export creates procedural ambience/effects. Spoken voice uses your Android text-to-speech engine and is played aloud; voice export to a file is not supported by every browser.</p>
+</section>
+<section class="card">
+ <h2>4. Save & install</h2>
+ <p class="muted">Your image stays in this browser session. Exported files are downloaded to your phone. Add this app to your home screen from your browser menu to use it like an app.</p>
+ <div class="notice muted">Privacy: image processing and sound synthesis happen locally in this page. This app does not upload your image or call a paid API.</div>
+ <button id="install" class="secondary" style="width:100%;margin-top:12px" hidden>＋ Install app</button>
+</section>
+</main>
+<footer>FreeVid Studio • Open-source starter • No subscriptions or API keys</footer>
+<script>
+const $=id=>document.getElementById(id);
+const canvas=$('canvas'),ctx=canvas.getContext('2d');
+let img=null,raf=0,start=0,playing=false,recorder=null,chunks=[],installPrompt=null;
+function setStatus(id,msg){$(id).textContent=msg}
+function dimensions(){const r=$('ratio').value;return r==='9:16'?[720,1280]:r==='1:1'?[900,900]:[1280,720]}
+function resizeCanvas(){const [w,h]=dimensions();canvas.width=w;canvas.height=h;draw(1)}
+function draw(t=1){
+ const w=canvas.width,h=canvas.height;ctx.fillStyle='#03050a';ctx.fillRect(0,0,w,h);
+ if(!img)return;
+ let scale=Math.max(w/img.width,h/img.height),baseW=img.width*scale,baseH=img.height*scale;
+ const mode=$('motion').value;let z=1+0.12*t,px=0,py=0;
+ if(mode==='still')z=1+0.018*t;
+ if(mode==='pan'){z=1.12;px=(t-.5)*w*.10}
+ if(mode==='drift'){px=(t-.5)*w*.045;py=Math.sin(t*Math.PI*2)*h*.018}
+ const dw=baseW*z,dh=baseH*z;
+ ctx.save();ctx.beginPath();ctx.rect(0,0,w,h);ctx.clip();
+ ctx.drawImage(img,(w-dw)/2+px,(h-dh)/2+py,dw,dh);
+ const g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,'#02061220');g.addColorStop(.65,'#03081700');g.addColorStop(1,'#02061299');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+ ctx.restore();
+}
+function frame(ts){if(!playing)return;const dur=+$('duration').value*1000;let t=Math.min(1,(ts-start)/dur);draw(t);if(t>=1){playing=false;$('stopBtn').disabled=true;$('previewBtn').disabled=!img;setStatus('videoStatus','Preview complete. Export video to save it.');return}raf=requestAnimationFrame(frame)}
+function play(){if(!img)return;cancelAnimationFrame(raf);playing=true;start=performance.now();$('stopBtn').disabled=false;$('previewBtn').disabled=true;setStatus('videoStatus','Preview playing…');raf=requestAnimationFrame(frame)}
+function stop(){playing=false;cancelAnimationFrame(raf);$('stopBtn').disabled=true;$('previewBtn').disabled=!img;draw(0);setStatus('videoStatus','Preview stopped.')}
+$('image').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const url=URL.createObjectURL(f);const im=new Image();im.onload=()=>{img=im;$('empty').hidden=true;$('previewBtn').disabled=false;$('exportVideo').disabled=false;resizeCanvas();setStatus('videoStatus','Image ready. Preview or export your clip.');URL.revokeObjectURL(url)};im.onerror=()=>setStatus('videoStatus','Could not open that image. Try another file.');im.src=url});
+$('duration').oninput=()=>{$('durLabel').textContent=$('duration').value+' seconds'};
+$('audioDuration').oninput=()=>{$('audioDurLabel').textContent=$('audioDuration').value+' seconds'};
+$('ratio').onchange=resizeCanvas;$('motion').onchange=()=>draw(0);$('previewBtn').onclick=play;$('stopBtn').onclick=stop;
+$('exportVideo').onclick=async()=>{
+ if(!img)return;
+ if(!canvas.captureStream||!window.MediaRecorder){setStatus('videoStatus','Video recording is not supported in this browser. Try Chrome on Android.');return}
+ stop();const dur=+$('duration').value;const stream=canvas.captureStream(30);chunks=[];
+ let mime=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(x=>MediaRecorder.isTypeSupported(x))||'';
+ try{recorder=new MediaRecorder(stream,mime?{mimeType:mime}:{});}catch(e){setStatus('videoStatus','Could not start video export on this browser.');return}
+ recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+ recorder.onstop=()=>{const blob=new Blob(chunks,{type:recorder.mimeType||'video/webm'});download(blob,'freevid-cinematic.webm');stream.getTracks().forEach(t=>t.stop());draw(1);setStatus('videoStatus','Video downloaded. Check your Downloads folder.')};
+ recorder.start();setStatus('videoStatus','Rendering video… keep this page open.');
+ const t0=performance.now();
+ const render=now=>{const p=Math.min(1,(now-t0)/(dur*1000));draw(p);if(p<1&&recorder.state==='recording')requestAnimationFrame(render);else if(recorder.state==='recording')recorder.stop()};
+ requestAnimationFrame(render);
+};
+function download(blob,name){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000)}
+$('speak').onclick=()=>{if(!('speechSynthesis'in window)){setStatus('audioStatus','Speech synthesis is not available in this browser.');return}speechSynthesis.cancel();const u=new SpeechSynthesisUtterance($('audioText').value);u.rate=0.92;u.pitch=0.95;u.onstart=()=>setStatus('audioStatus','Speaking with your device speech engine…');u.onend=()=>setStatus('audioStatus','Voice playback finished.');speechSynthesis.speak(u)};
+$('stopSpeak').onclick=()=>{if('speechSynthesis'in window)speechSynthesis.cancel();setStatus('audioStatus','Voice stopped.')};
+$('exportAudio').onclick=()=>{
+ const duration=+$('audioDuration').value,kind=$('tone').value,sr=44100,n=duration*sr;
+ const buffer=new ArrayBuffer(44+n*2),view=new DataView(buffer);
+ const write=(o,s)=>{for(let i=0;i<s.length;i++)view.setUint8(o+i,s.charCodeAt(i))};
+ write(0,'RIFF');view.setUint32(4,36+n*2,true);write(8,'WAVE');write(12,'fmt ');view.setUint32(16,16,true);view.setUint16(20,1,true);view.setUint16(22,1,true);view.setUint32(24,sr,true);view.setUint32(28,sr*2,true);view.setUint16(32,2,true);view.setUint16(34,16,true);write(36,'data');view.setUint32(40,n*2,true);
+ let seed=92821;const rand=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296*2-1};
+ for(let i=0;i<n;i++){const t=i/sr,fade=Math.min(1,t*3,(duration-t)*3);let s=0;
+ if(kind==='cinematic'){s=.14*Math.sin(2*Math.PI*110*t)+.09*Math.sin(2*Math.PI*164.81*t)+.06*Math.sin(2*Math.PI*220*t)+.018*rand()}
+ if(kind==='wind'){s=.07*rand()+.025*Math.sin(2*Math.PI*(65+9*Math.sin(t*.5))*t)}
+ if(kind==='drone'){s=.16*Math.sin(2*Math.PI*55*t)+.07*Math.sin(2*Math.PI*82.4*t)+.015*rand()}
+ s=kind==='silence'?0:s*fade;view.setInt16(44+i*2,Math.max(-1,Math.min(1,s))*32767,true)}
+ download(new Blob([buffer],{type:'audio/wav'}),'freevid-ambient.wav');setStatus('audioStatus','WAV downloaded. This is generated ambience, not a voice recording.')
+};
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;$('install').hidden=false});
+$('install').onclick=async()=>{if(installPrompt){installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;$('install').hidden=true}else setStatus('audioStatus','Use your browser menu → Add to Home screen.')};
+if('serviceWorker'in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+draw();
+</script>
+</body></html>

@@ -1,0 +1,11 @@
+{
+  "name": "FreeVid Studio",
+  "short_name": "FreeVid",
+  "description": "Free local image-to-cinematic-video and ambient audio studio.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#080c18",
+  "theme_color": "#090d1b",
+  "orientation": "any",
+  "icons": []
+}
